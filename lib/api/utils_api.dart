@@ -11,10 +11,8 @@ Future<String> getToken(String? userid) async {
 
   // Parse JSON
   final data = jsonDecode(response.body);
-  print(response.body);
   // Ambil properti "token"
   final token = data['token'] as String;
-  print("TOKEN:$token");
 
   return token;
 }

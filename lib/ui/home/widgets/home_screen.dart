@@ -24,7 +24,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final posts = ref.watch(postsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Timeline')),
+      appBar: AppBar(
+        title: const Text('For you'),
+        centerTitle: true,
+        backgroundColor: Color.fromRGBO(255, 117, 31, 1),
+        titleTextStyle: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+      ),
       body: RefreshIndicator(
         onRefresh: () async {
           // 🌀 Pull to refresh -> fetch ulang

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobileapp/api/user_api.dart';
+import 'package:mobileapp/domain/posts.dart';
 import 'package:mobileapp/routing/routes.dart';
-import 'package:mobileapp/state/postNotifier.dart';
+import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -13,10 +15,27 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  List<Posts> posts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Ambil user dari provider saat halaman pertama muncul
+    Future.microtask(() async {
+      final user = ref.read(userProvider);
+      if (user != null && user.uid.isNotEmpty) {
+        // fetch post berdasarkan userId
+        final result = await fetchPostsByUserId(user.uid);
+        print(result);
+        setState(() {
+          posts = result; // update state
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final posts = ref.watch(postsProvider);
-
     return Scaffold(
       body: DefaultTabController(
         length: 2,

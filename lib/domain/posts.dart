@@ -5,10 +5,12 @@ class Posts {
   final List<String> images;
   final String? nickname;
   final DateTime createdAt;
+  final String? username;
 
   Posts({
     required this.id,
     required this.userId,
+    required this.username,
     required this.nickname,
     required this.content,
     required this.images,
@@ -23,6 +25,7 @@ class Posts {
       id: id,
       userId: data['user_id'],
       nickname: userData != null ? userData['nickname'] as String? : null,
+      username: userData != null ? userData['username'] as String? : null,
       content: data['content'] ?? '',
       images: List<String>.from(data['images'] ?? []),
       createdAt: (data['created_at'] as dynamic)?.toDate() ?? DateTime.now(),

@@ -1,5 +1,7 @@
 import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobileapp/state/user.dart';
+import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobileapp/api/utils_api.dart';
@@ -8,7 +10,6 @@ import 'package:mobileapp/state/token.dart';
 Future<void> initGuestUser(WidgetRef ref) async {
   // Cek apakah user sudah login
   final auth = FirebaseAuth.instance;
-  print("AKU ANONY,M");
 
   if (auth.currentUser == null) {
     // Login anonim kalau belum
@@ -23,21 +24,22 @@ Future<void> initGuestUser(WidgetRef ref) async {
   // Buat / update data di Firestore
   final doc = usersRef.doc(user.uid);
   final snapshot = await doc.get();
+  ref.read(userProvider.notifier).state = user;
 
   if (!snapshot.exists) {
     final token = await getToken(user.uid);
     ref.read(tokenProvider.notifier).state = token;
-    print(token);
     await doc.set({
       'uid': user.uid,
       'is_guest': true,
+      'nickname': "Anonymous",
+      'username': "anon_" + Uuid().v4().substring(0,6),
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });
   } else {
     final token = await getToken(user.uid);
     ref.read(tokenProvider.notifier).state = token;
-    print(token);
     await doc.update({'updated_at': FieldValue.serverTimestamp()});
   }
 }

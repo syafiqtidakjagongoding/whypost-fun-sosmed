@@ -11,14 +11,15 @@ import 'package:mobileapp/ui/splash/splash_screen.dart';
 final router = GoRouter(
   initialLocation: Routes.splash,
   routes: [
+    GoRoute(path: Routes.splash, builder: (context, state) => SplashScreen()),
+
     /// 🔹 ShellRoute untuk layout dengan BottomNavigationBar
     ShellRoute(
       builder: (context, state, child) {
         return Scaffold(
           body: child,
+          backgroundColor: Color.fromRGBO(255, 117, 31, 1),
           bottomNavigationBar: BottomNavigationBar(
-            fixedColor: Colors.black,
-            unselectedItemColor: Colors.grey,
             currentIndex: _calculateIndex(state.uri.toString()),
             onTap: (index) {
               switch (index) {
@@ -40,6 +41,15 @@ final router = GoRouter(
             },
             showSelectedLabels: false, // 👈 sembunyikan label
             showUnselectedLabels: false, // 👈 sembunyikan label
+            selectedItemColor: const Color.fromARGB(255, 245, 237, 237),
+            unselectedItemColor: Colors.white,
+            backgroundColor: const Color.fromRGBO(
+              255,
+              117,
+              31,
+              1,
+            ), // 🟧 bar oranye
+            type: BottomNavigationBarType.fixed, // penting biar warna konsisten
             items: [
               const BottomNavigationBarItem(
                 icon: Icon(Icons.home),
@@ -78,14 +88,10 @@ final router = GoRouter(
           path: Routes.profile,
           builder: (context, state) => const ProfileScreen(),
         ),
-         GoRoute(
+        GoRoute(
           path: Routes.addPost,
           builder: (context, state) => const AddPostWidget(),
         ),
-        GoRoute(
-          path: Routes.splash,
-          builder: (context,state) =>  SplashScreen(),
-        )
       ],
     ),
   ],

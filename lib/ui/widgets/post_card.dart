@@ -1,3 +1,4 @@
+import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter/material.dart';
 import 'package:mobileapp/domain/posts.dart';
 import 'package:mobileapp/ui/widgets/post_images.dart';
@@ -17,14 +18,54 @@ class PostCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.grey,
-                  child: Icon(Icons.person, size: 35, color: Colors.white),
+                  radius: 20,
+                  child: Icon(Icons.person, size: 30, color: Colors.white),
                 ),
-                const SizedBox(width: 16),
-                Text(post.nickname ?? "Anonymous"),
+                SizedBox(width: 10),
+                // Expanded supaya area nickname + time memenuhi sisa ruang
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Nama user di kiri
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Text(
+                              post.nickname ?? "Anonymous",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                post.username ?? "",
+                                overflow: TextOverflow
+                                    .ellipsis, // tampil jadi "panjangsekaliuse..."
+                                maxLines: 1, // penting biar satu baris aja
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Waktu di kanan
+                      Text(
+                        timeago.format(post.createdAt.toLocal()),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             // Konten teks
@@ -34,10 +75,6 @@ class PostCard extends StatelessWidget {
             PostImages(images: post.images),
 
             const SizedBox(height: 8),
-            Text(
-              post.createdAt.toLocal().toString(),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
           ],
         ),
       ),
