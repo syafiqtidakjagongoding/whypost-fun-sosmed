@@ -18,7 +18,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       title: "Untraced App",
       routerConfig: router,
-      theme: ThemeData(scaffoldBackgroundColor: Colors.white),
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(
+          primary: Color.fromRGBO(255, 117, 31, 1),
+          seedColor: Colors.white
+        ),
+        useMaterial3: true,
+      ),
     );
   }
 }

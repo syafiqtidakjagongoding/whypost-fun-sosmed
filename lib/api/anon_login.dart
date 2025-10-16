@@ -1,5 +1,6 @@
 import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mobileapp/domain/users.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,40 +9,46 @@ import 'package:mobileapp/api/utils_api.dart';
 import 'package:mobileapp/state/token.dart';
 
 Future<void> initGuestUser(WidgetRef ref) async {
-  // Cek apakah user sudah login
   final auth = FirebaseAuth.instance;
 
+  // 1️⃣ Login anonim jika belum
   if (auth.currentUser == null) {
-    // Login anonim kalau belum
     await auth.signInAnonymously();
-    final String token = await getToken(null);
+    final token = await getToken(null);
     ref.read(tokenProvider.notifier).state = token;
   }
 
-  final user = auth.currentUser!;
+  final firebaseUser = auth.currentUser!;
   final usersRef = FirebaseFirestore.instance.collection('users');
+  final docRef = usersRef.doc(firebaseUser.uid);
+  final snapshot = await docRef.get();
 
-  // Buat / update data di Firestore
-  final doc = usersRef.doc(user.uid);
-  final snapshot = await doc.get();
-  ref.read(userProvider.notifier).state = user;
-
+  // 2️⃣ Buat user baru di Firestore jika belum ada
   if (!snapshot.exists) {
-    final token = await getToken(user.uid);
-    ref.read(tokenProvider.notifier).state = token;
-    await doc.set({
-      'uid': user.uid,
+    await docRef.set({
+      'uid': firebaseUser.uid,
       'is_guest': true,
       'nickname': "Anonymous",
-      'username': "anon_" + Uuid().v4().substring(0,6),
+      'username': "anon_${Uuid().v4()}",
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });
   } else {
-    final token = await getToken(user.uid);
-    ref.read(tokenProvider.notifier).state = token;
-    await doc.update({'updated_at': FieldValue.serverTimestamp()});
+    // update timestamp
+    await docRef.update({'updated_at': FieldValue.serverTimestamp()});
   }
+
+  // 3️⃣ Ambil ulang data Firestore (supaya pasti up-to-date)
+  final freshSnapshot = await docRef.get();
+  final data = freshSnapshot.data()!;
+  final appUser = AppUser.fromFirestore(data);
+
+  // 4️⃣ Simpan user state dari Firestore, bukan dari auth
+  ref.read(userProvider.notifier).state = appUser;
+
+  // 5️⃣ Perbarui token
+  final token = await getToken(firebaseUser.uid);
+  ref.read(tokenProvider.notifier).state = token;
 }
 
 Future<void> upgradeGuest(String email, String password) async {

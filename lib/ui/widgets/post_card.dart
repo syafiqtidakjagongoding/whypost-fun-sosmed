@@ -3,10 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:mobileapp/domain/posts.dart';
 import 'package:mobileapp/ui/widgets/post_images.dart';
 
-class PostCard extends StatelessWidget {
-  final Posts post;
+class PostCard extends StatefulWidget {
+  final Posts post; // ✅ terima data post lewat constructor
 
   const PostCard({Key? key, required this.post}) : super(key: key);
+
+  @override
+  State<PostCard> createState() => _PostCardState(); // ✅ buat State
+}
+
+class _PostCardState extends State<PostCard> {
+  late Posts post;
+  bool isLiked = false;
+
+  void toggleLike() {
+    setState(() {
+      isLiked = !isLiked; // ✅ ubah state saat ditekan
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    post = widget.post; // ✅ akses dari widget
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +64,7 @@ class PostCard extends StatelessWidget {
                             SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                post.username ?? "",
+                                "@${post.username ?? ''}",
                                 overflow: TextOverflow
                                     .ellipsis, // tampil jadi "panjangsekaliuse..."
                                 maxLines: 1, // penting biar satu baris aja
@@ -69,12 +89,61 @@ class PostCard extends StatelessWidget {
               ],
             ),
             // Konten teks
+            const SizedBox(height: 8),
             Text(post.content),
             const SizedBox(height: 8),
 
             PostImages(images: post.images),
 
             const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                  ), // ganti ke Icons.favorite kalau sudah like
+                  color: Colors.red,
+                  onPressed: () {
+                    toggleLike();
+                  },
+                ),
+                Text(
+                  post.totalLiked.toString(), // contoh jumlah like
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(width: 16),
+
+                // 💬 Comment Button
+                IconButton(
+                  icon: Icon(Icons.comment_outlined),
+                  color: Colors.grey[700],
+                  onPressed: () {
+                    // TODO: Navigasi ke kolom komentar
+                    print('Comment pressed');
+                  },
+                ),
+                Text(
+                  post.totalComment.toString(),
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(width: 16),
+
+                // 📤 Share Button
+                IconButton(
+                  icon: Icon(Icons.share),
+                  color: Colors.grey[700],
+                  onPressed: () {
+                    // TODO: Bagikan postingan
+                    print('Share pressed');
+                  },
+                ),
+                Text(
+                  post.totalShare.toString(),
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
           ],
         ),
       ),

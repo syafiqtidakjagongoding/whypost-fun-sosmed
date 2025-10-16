@@ -11,7 +11,10 @@ class PostsNotifier extends StateNotifier<List<Posts>> {
 
   Future<void> fetch() async {
     // 🔸 Ganti dengan Firestore
+    
     final posts = await fetchPostsOnce(); 
     state = posts;
   }
 }
+
+

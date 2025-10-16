@@ -22,37 +22,37 @@ Future<AppUser?> fetchUserDataByName() async {
 
   final data = doc.data()!;
 
-
-  return AppUser.fromFirestore(doc.id, data);
+  return AppUser.fromFirestore(data);
 }
 
-Future<List<Posts>> fetchPostsByUserId(String userid) async {
+Future<List<Posts>> fetchPostsByUserId(String userId) async {
   try {
-    // 1️⃣ Ambil semua post
-    final snapshot = await FirebaseFirestore.instance
-        .collection('posts')
-        .where('user_id', isEqualTo: userid)
-        .orderBy('created_at', descending: true)
-        .get();
+    final firestore = FirebaseFirestore.instance;
 
-    // 3️⃣ Ambil data user untuk userId tersebut
-    final usersSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('uid', isEqualTo: userid)
-        .get();
+    // Ambil post & user data secara paralel
+    final results = await Future.wait([
+      firestore
+          .collection('posts')
+          .where('user_id', isEqualTo: userId)
+          .orderBy('created_at', descending: true)
+          .get(),
+      firestore.collection('users').where('uid', isEqualTo: userId).get(),
+    ]);
 
-    // Map userId -> userData
-    final userMap = {for (var doc in usersSnapshot.docs) doc.id: doc.data()};
+    final postSnapshot = results[0];
+    final userSnapshot = results[1];
 
-    // 4️⃣ Gabungkan post + user info
-    final posts = snapshot.docs.map((doc) {
+    // Buat map userId → data user
+    final userMap = {
+      for (var doc in userSnapshot.docs) doc.data()['uid']: doc.data(),
+    };
+
+    // Gabungkan post + user info
+    return postSnapshot.docs.map((doc) {
       final data = doc.data();
-      final userId = data['user_id'] as String;
-      final userData = userMap[userId]; // bisa null kalau user dihapus
-      return Posts.fromFirestore(doc.id, data, userData: userData);
+      final uid = data['user_id'] as String;
+      return Posts.fromFirestore(doc.id, data, userData: userMap[uid]);
     }).toList();
-
-    return posts;
   } catch (e) {
     print('❌ Gagal fetch posts: $e');
     return [];

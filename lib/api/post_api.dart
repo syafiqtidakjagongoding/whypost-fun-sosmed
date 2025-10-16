@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_installations/firebase_app_installations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobileapp/domain/posts.dart';
@@ -43,7 +42,7 @@ Future<void> createPost({
 
     messenger.showSnackBar(
       const SnackBar(
-        content: Text('Postingan berhasil dibuat'),
+        content: Text('✅ Postingan berhasil dibuat'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating, // biar melayang
         duration: Duration(seconds: 2),
@@ -90,10 +89,10 @@ Future<String> uploadFileToR2(
       body: bytes,
     );
 
-    if (uploadResp.statusCode != 200 || uploadResp.statusCode != 201) {
+    if (uploadResp.statusCode != 200) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text('❌ Postingan gagal dibuat'),
+          content: Text('❌ Gambar gagal di posting'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating, // biar melayang
           duration: Duration(seconds: 2),
@@ -103,7 +102,7 @@ Future<String> uploadFileToR2(
   } else {
     messenger.showSnackBar(
       const SnackBar(
-        content: Text('❌ Postingan gagal dibuat'),
+        content: Text('❌ Gambar gagal di posting'),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating, // biar melayang
         duration: Duration(seconds: 2),

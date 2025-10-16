@@ -1,41 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobileapp/api/user_api.dart';
-import 'package:mobileapp/domain/posts.dart';
 import 'package:mobileapp/routing/routes.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  ProfileScreen({super.key});
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  List<Posts> posts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    // Ambil user dari provider saat halaman pertama muncul
-    Future.microtask(() async {
-      final user = ref.read(userProvider);
-      if (user != null && user.uid.isNotEmpty) {
-        // fetch post berdasarkan userId
-        final result = await fetchPostsByUserId(user.uid);
-        print(result);
-        setState(() {
-          posts = result; // update state
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final userPostsAsync = ref.watch(userPostsProvider);
+    final user = ref.watch(userProvider);
+
+    print(user.toString());
     return Scaffold(
       body: DefaultTabController(
         length: 2,
@@ -43,31 +26,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             // 🔹 Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, 30, 16, 25),
               decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
+                color: Theme.of(context).colorScheme.primary,
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 30,
-                    backgroundColor: Colors.grey,
                     child: Icon(Icons.person, size: 35, color: Colors.white),
                   ),
-                  const SizedBox(width: 16),
+
+                  SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
-                        "Anonymous",
+                        (user?.nickname?.isNotEmpty ?? false)
+                            ? user!.nickname!
+                            : "Anonymous",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      Text(
+                        (user?.username?.isNotEmpty ?? false)
+                            ? "@" + user!.username!
+                            : "",
+                        style: TextStyle(fontSize: 12),
                       ),
                       SizedBox(height: 4),
                       Text("Total posts : 0"),
@@ -79,7 +66,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
 
             // 🔹 TabBar
-            const TabBar(
+            TabBar(
               indicatorColor: Colors.black,
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey,
@@ -91,29 +78,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             // 🔹 TabBarView
             Expanded(
-              child: TabBarView(
-                children: [
-                  // 👉 Tab Postingan
-                  ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(), // penting!
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      final post = posts[index];
-                      return PostCard(post: post);
-                    },
-                  ),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await ref.read(userPostsProvider);
+                },
+                child: TabBarView(
+                  children: [
+                    // 👉 Tab Postingan
+                    userPostsAsync.when(
+                      data: (posts) {
+                        if (posts.isEmpty) {
+                          return const Center(
+                            child: Text("Belum ada postingan"),
+                          );
+                        }
+                        return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return PostCard(post: post);
+                          },
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(child: Text('Error: $e')),
+                    ),
 
-                  // 👉 Tab Likes
-                  ListView.builder(
-                    itemCount: 3,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: const Icon(Icons.favorite, color: Colors.red),
-                        title: Text("Anda menyukai postingan #${index + 1}"),
-                      );
-                    },
-                  ),
-                ],
+                    // 👉 Tab Likes
+                    ListView.builder(
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          leading: Icon(Icons.favorite, color: Colors.red),
+                          title: Text("Anda menyukai postingan #${index + 1}"),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -123,7 +127,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         onPressed: () {
           context.go(Routes.addPost);
         },
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
       ),
     );
   }
