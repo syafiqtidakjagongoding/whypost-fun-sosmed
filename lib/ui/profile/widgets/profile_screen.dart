@@ -18,10 +18,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final userPostsAsync = ref.watch(userPostsProvider);
     final user = ref.watch(userProvider);
 
-    print(user.toString());
     return Scaffold(
       body: DefaultTabController(
-        length: 2,
+        length: 3,
         child: Column(
           children: [
             // 🔹 Header
@@ -71,8 +70,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey,
               tabs: [
-                Tab(text: "Your posts"),
-                Tab(text: "Likes"),
+                Tab(text: "Your posts", icon: Icon(Icons.post_add)),
+                Tab(text: "Likes", icon: Icon(Icons.favorite)),
+                Tab(text: "Saved post", icon: Icon(Icons.bookmark)),
               ],
             ),
 
@@ -115,6 +115,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           title: Text("Anda menyukai postingan #${index + 1}"),
                         );
                       },
+                    ),
+                    // 👉 Tab Likes
+                   userPostsAsync.when(
+                      data: (posts) {
+                        if (posts.isEmpty) {
+                          return const Center(
+                            child: Text("Belum ada postingan"),
+                          );
+                        }
+                        return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return PostCard(post: post);
+                          },
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(child: Text('Error: $e')),
                     ),
                   ],
                 ),

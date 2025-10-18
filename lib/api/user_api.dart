@@ -58,3 +58,25 @@ Future<List<Posts>> fetchPostsByUserId(String userId) async {
     return [];
   }
 }
+
+Future<bool> checkIsLiked(String userId, String postId) async {
+  try {
+    final docId = '${userId}_$postId'; // 🔸 kombinasi unik
+    final likeRef = FirebaseFirestore.instance
+        .collection('like_post')
+        .doc(docId);
+
+    final docSnap = await likeRef.get();
+
+    if (docSnap.exists) {
+      print('✅ Post $postId sudah di-like oleh user $userId');
+      return true;
+    } else {
+      print('ℹ️ Post $postId belum di-like oleh user $userId');
+      return false;
+    }
+  } catch (e) {
+    print('❌ Gagal like post: $e');
+    rethrow;
+  }
+}

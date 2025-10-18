@@ -9,10 +9,9 @@ final postsProvider = StateNotifierProvider<PostsNotifier, List<Posts>>((ref) {
 class PostsNotifier extends StateNotifier<List<Posts>> {
   PostsNotifier() : super([]);
 
-  Future<void> fetch() async {
+  Future<void> fetch(String userId) async {
     // 🔸 Ganti dengan Firestore
-    
-    final posts = await fetchPostsOnce(); 
+    final posts = await fetchPostsOnce(userId); 
     state = posts;
   }
 }

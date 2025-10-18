@@ -113,7 +113,7 @@ Future<String> uploadFileToR2(
   return fileName;
 }
 
-Future<List<Posts>> fetchPostsOnce() async {
+Future<List<Posts>> fetchPostsOnce(String userInThisDevice) async {
   try {
     // 1️⃣ Ambil semua post
     final snapshot = await FirebaseFirestore.instance
@@ -127,6 +127,11 @@ Future<List<Posts>> fetchPostsOnce() async {
         .toSet()
         .toList();
 
+    // 2️⃣ Ambil semua userId unik dari post
+    final postIds = snapshot.docs
+        .map((doc) => doc.id) // ← ini kuncinya
+        .toList();
+
     // 3️⃣ Ambil data user untuk userId tersebut
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('users')
@@ -136,13 +141,30 @@ Future<List<Posts>> fetchPostsOnce() async {
     // Map userId -> userData
     final userMap = {for (var doc in usersSnapshot.docs) doc.id: doc.data()};
 
-    // 4️⃣ Gabungkan post + user info
-    final posts = snapshot.docs.map((doc) {
-      final data = doc.data();
-      final userId = data['user_id'] as String;
-      final userData = userMap[userId]; // bisa null kalau user dihapus
-      return Posts.fromFirestore(doc.id, data, userData: userData);
-    }).toList();
+    final posts = await Future.wait(
+      snapshot.docs.map((doc) async {
+        final data = doc.data();
+
+        // 🔸 Cek apakah userInThisDevice sudah nge-like
+        final likeDocId = '${userInThisDevice}_${doc.id}';
+        final likeDoc = await FirebaseFirestore.instance
+            .collection('like_post')
+            .doc(likeDocId)
+            .get();
+
+        final isLikedByMe = likeDoc.exists;
+
+        final userId = data['user_id'] as String;
+        final userData = userMap[userId];
+
+        return Posts.fromFirestore(
+          doc.id,
+          data,
+          userData: userData,
+          isLikedByMe: isLikedByMe,
+        );
+      }),
+    );
 
     return posts;
   } catch (e) {

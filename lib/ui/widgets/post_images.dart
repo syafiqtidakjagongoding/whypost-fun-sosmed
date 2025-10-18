@@ -27,7 +27,7 @@ class PostImages extends StatelessWidget {
               padding: const EdgeInsets.all(2),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(url, fit: BoxFit.cover, height: 150),
+                child: Image.network(url, fit: BoxFit.cover),
               ),
             ),
           );

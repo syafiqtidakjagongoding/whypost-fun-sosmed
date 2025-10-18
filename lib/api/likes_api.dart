@@ -14,6 +14,12 @@ Future<void> likePost(String userId, String postId) async {
       'updated_at': FieldValue.serverTimestamp(),
     });
 
+     // 2️⃣ Increment total_liked di dokumen post
+    final postRef = FirebaseFirestore.instance.collection("posts").doc(postId);
+    await postRef.update({
+      "total_liked": FieldValue.increment(1),
+    });
+
     print('✅ Berhasil like post $postId oleh user $userId');
   } catch (e) {
     print('❌ Gagal like post: $e');
@@ -29,6 +35,12 @@ Future<void> unlikePost(String userId, String postId) async {
         .doc(docId);
 
     await likeRef.delete();
+
+    // 2️⃣ Increment total_liked di dokumen post
+    final postRef = FirebaseFirestore.instance.collection("posts").doc(postId);
+    await postRef.update({
+      "total_liked": FieldValue.increment(-1),
+    });
 
     print('✅ Unlike berhasil untuk post $postId oleh user $userId');
   } catch (e) {

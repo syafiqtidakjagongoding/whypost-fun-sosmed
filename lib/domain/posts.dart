@@ -8,8 +8,7 @@ class Posts {
   final String? username;
   final int totalLiked;
   final int totalComment;
-  final int totalShare;
-  
+  final bool isLikedByMe;
 
   Posts({
     required this.id,
@@ -19,14 +18,15 @@ class Posts {
     required this.content,
     required this.totalLiked,
     required this.totalComment,
-    required this.totalShare,
     required this.images,
     required this.createdAt,
+    this.isLikedByMe = false,
   });
   factory Posts.fromFirestore(
     String id,
     Map<String, dynamic> data, {
     Map<String, dynamic>? userData,
+    isLikedByMe = false,
   }) {
     return Posts(
       id: id,
@@ -36,9 +36,9 @@ class Posts {
       content: data['content'] ?? '',
       totalLiked: data['total_liked'] ?? 0,
       totalComment: data['total_comment'] ?? 0,
-      totalShare: data['total_share'] ?? 0,
       images: List<String>.from(data['images'] ?? []),
       createdAt: (data['created_at'] as dynamic)?.toDate() ?? DateTime.now(),
+      isLikedByMe: isLikedByMe
     );
   }
 }

@@ -5,4 +5,5 @@ abstract final class Routes {
   static const profile = "/profile";
   static const splash = "/splash";
   static const addPost = "/addpost";
+  static const viewPost = "/viewPost";
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobileapp/state/postNotifier.dart';
+import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -14,9 +15,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    fetch();
+  }
+
+  void fetch() {
+    final user = ref.read(userProvider);
     // fetch hanya saat pertama kali masuk, tidak setiap navigasi
-    if (ref.read(postsProvider).isEmpty) {
-      ref.read(postsProvider.notifier).fetch();
+    if (user != null && user.uid.isNotEmpty) {
+      if (ref.read(postsProvider).isEmpty) {
+        ref.read(postsProvider.notifier).fetch(user.uid);
+      }
     }
   }
 
@@ -32,8 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // 🌀 Pull to refresh -> fetch ulang
-          await ref.read(postsProvider.notifier).fetch();
+          fetch();
         },
         child: posts.isEmpty
             ? const Center(child: CircularProgressIndicator())
