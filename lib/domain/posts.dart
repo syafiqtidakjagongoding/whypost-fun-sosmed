@@ -9,6 +9,7 @@ class Posts {
   final int totalLiked;
   final int totalComment;
   final bool isLikedByMe;
+  final bool isBookmarked;
 
   Posts({
     required this.id,
@@ -21,12 +22,14 @@ class Posts {
     required this.images,
     required this.createdAt,
     this.isLikedByMe = false,
+    this.isBookmarked = false
   });
   factory Posts.fromFirestore(
     String id,
     Map<String, dynamic> data, {
     Map<String, dynamic>? userData,
     isLikedByMe = false,
+    isBookmarked = false
   }) {
     return Posts(
       id: id,
@@ -38,7 +41,36 @@ class Posts {
       totalComment: data['total_comment'] ?? 0,
       images: List<String>.from(data['images'] ?? []),
       createdAt: (data['created_at'] as dynamic)?.toDate() ?? DateTime.now(),
-      isLikedByMe: isLikedByMe
+      isLikedByMe: isLikedByMe,
+      isBookmarked: isBookmarked
+    );
+  }
+
+   Posts copyWith({
+    String? id,
+    String? userId,
+    String? content,
+    List<String>? images,
+    String? nickname,
+    String? username,
+    DateTime? createdAt,
+    int? totalLiked,
+    int? totalComment,
+    bool? isLikedByMe,
+    bool? isBookmarked
+  }) {
+    return Posts(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      content: content ?? this.content,
+      images: images ?? this.images,
+      nickname: nickname ?? this.nickname,
+      username: username ?? this.username,
+      createdAt: createdAt ?? this.createdAt,
+      totalLiked: totalLiked ?? this.totalLiked,
+      totalComment: totalComment ?? this.totalComment,
+      isLikedByMe: isLikedByMe ?? this.isLikedByMe,
+      isBookmarked: isBookmarked ?? this.isBookmarked
     );
   }
 }

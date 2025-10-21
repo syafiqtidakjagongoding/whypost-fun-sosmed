@@ -13,45 +13,39 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
-  void initState() {
-    super.initState();
-    fetch();
-  }
-
-  void fetch() {
-    final user = ref.read(userProvider);
-    // fetch hanya saat pertama kali masuk, tidak setiap navigasi
-    if (user != null && user.uid.isNotEmpty) {
-      if (ref.read(postsProvider).isEmpty) {
-        ref.read(postsProvider.notifier).fetch(user.uid);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final posts = ref.watch(postsProvider);
+    final user = ref.watch(userProvider);
+    final postsAsync = ref.watch(postsStreamProvider(user!.uid));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('For you'),
         centerTitle: true,
         backgroundColor: Color.fromRGBO(255, 117, 31, 1),
-        titleTextStyle: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
+        titleTextStyle: const TextStyle(
+          fontSize: 23,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          fetch();
-        },
-        child: posts.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(), // penting!
-                itemCount: posts.length,
-                itemBuilder: (context, index) {
-                  final post = posts[index];
-                  return PostCard(post: post);
-                },
-              ),
+      body: postsAsync.when(
+        data: (posts) => RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(postsStreamProvider(user.uid));
+          },
+          child: posts.isEmpty
+              ? const Center(child: Text('Belum ada post'))
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    return PostCard(post: post);
+                  },
+                ),
+        ),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        error: (e, st) => Center(child: Text('Error: $e')),
       ),
     );
   }

@@ -29,7 +29,7 @@ Future<void> initGuestUser(WidgetRef ref) async {
       'uid': firebaseUser.uid,
       'is_guest': true,
       'nickname': "Anonymous",
-      'username': "anon_${Uuid().v4()}",
+      'username': "@anon_${Uuid().v4()}",
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });

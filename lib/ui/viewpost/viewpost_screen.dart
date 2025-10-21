@@ -1,25 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobileapp/state/postNotifier.dart';
+import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_images.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:mobileapp/domain/posts.dart';
 
-class ViewpostScreen extends StatefulWidget {
+class ViewpostScreen extends ConsumerStatefulWidget {
   final Posts post;
 
   const ViewpostScreen({super.key, required this.post});
 
   @override
-  State<ViewpostScreen> createState() => _ViewpostScreenState();
+  ConsumerState<ViewpostScreen> createState() => _ViewpostScreenState();
 }
 
-class _ViewpostScreenState extends State<ViewpostScreen> {
+class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
   late Posts post;
   late bool isLiked = false;
+  late int totalLiked;
+  late bool isBookmarked;
 
   void toggleLike() {
+    final user = ref.watch(userProvider);
+    final notifier = ref.read(postsNotifierProvider(user!.uid).notifier);
+
+    // Optimistic UI update
     setState(() {
       isLiked = !isLiked;
+      if (isLiked) {
+        totalLiked += 1;
+      } else {
+        totalLiked = totalLiked > 0 ? totalLiked - 1 : 0;
+      }
+
+      post = post.copyWith(totalLiked: totalLiked, isLikedByMe: isLiked);
     });
+
+    // Update ke backend (Firestore/API)
+    notifier.toggleLike(post.id, isLiked);
+  }
+
+  void toggleBookmark() {
+    final user = ref.watch(userProvider);
+    final notifier = ref.read(postsNotifierProvider(user!.uid).notifier);
+
+    setState(() {
+      isBookmarked = !isBookmarked;
+      post = post.copyWith(isBookmarked: isBookmarked);
+    });
+
+    notifier.toggleBookmark(post.id, isBookmarked);
   }
 
   @override
@@ -27,6 +58,8 @@ class _ViewpostScreenState extends State<ViewpostScreen> {
     super.initState();
     post = widget.post;
     isLiked = post.isLikedByMe; // sekarang aman karena post sudah diisi
+    totalLiked = post.totalLiked;
+    isBookmarked = post.isBookmarked;
   }
 
   @override
@@ -107,10 +140,12 @@ class _ViewpostScreenState extends State<ViewpostScreen> {
                         isLiked ? Icons.favorite : Icons.favorite_border,
                       ),
                       color: Colors.red,
-                      onPressed: toggleLike,
+                      onPressed: () {
+                        toggleLike();
+                      },
                     ),
                     Text(
-                      post.totalLiked.toString(),
+                      totalLiked.toString(),
                       style: const TextStyle(fontSize: 14),
                     ),
                     const SizedBox(width: 16),
@@ -129,10 +164,12 @@ class _ViewpostScreenState extends State<ViewpostScreen> {
                     const SizedBox(width: 16),
 
                     IconButton(
-                      icon: const Icon(Icons.bookmark),
+                      icon: Icon(
+                        isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                      ),
                       color: Colors.grey,
                       onPressed: () {
-                        print('Add to bookmark');
+                       toggleBookmark();
                       },
                     ),
                   ],

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobileapp/api/likes_api.dart';
+import 'package:mobileapp/api/bookmark_api.dart';
+import 'package:mobileapp/state/postNotifier.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/viewpost/viewpost_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -19,27 +20,52 @@ class PostCard extends ConsumerStatefulWidget {
 class _PostCardState extends ConsumerState<PostCard> {
   late Posts post;
   late bool isLiked;
-
-  void toggleLike() {
-    final user = ref.watch(userProvider);
-
-    setState(() {
-      isLiked = !isLiked; // ✅ ubah state saat ditekan
-    });
-    if (user != null && user.uid.isNotEmpty) {
-      if (isLiked) {
-        likePost(user.uid, post.id);
-      } else {
-        unlikePost(user.uid, post.id);
-      }
-    }
-  }
+  late bool isBookmarked;
+  late int totalLiked;
 
   @override
   void initState() {
     super.initState();
     post = widget.post; // ✅ akses dari widget
     isLiked = post.isLikedByMe; // sekarang aman karena post sudah diisi
+    totalLiked = post.totalLiked;
+    isBookmarked = post.isBookmarked;
+  }
+
+  void toggleLike() {
+    final user = ref.watch(userProvider);
+    final notifier = ref.read(postsNotifierProvider(user!.uid).notifier);
+
+    // Optimistic UI update
+    setState(() {
+      isLiked = !isLiked;
+      if (isLiked) {
+        totalLiked += 1;
+      } else {
+        totalLiked = totalLiked > 0 ? totalLiked - 1 : 0;
+      }
+
+      post = post.copyWith(totalLiked: totalLiked, isLikedByMe: isLiked);
+    });
+
+    // Update ke backend (Firestore/API)
+    notifier.toggleLike(post.id, isLiked);
+  }
+
+  void toggleBookmark() {
+    final user = ref.watch(userProvider);
+    final notifier = ref.read(postsNotifierProvider(user!.uid).notifier);
+
+    setState(() {
+      isBookmarked = !isBookmarked;
+      if (isBookmarked) {
+        post = post.copyWith(isBookmarked: true);
+      } else {
+        post = post.copyWith(isBookmarked: false);
+      }
+    });
+
+    notifier.toggleBookmark(post.id, isBookmarked);
   }
 
   @override
@@ -133,7 +159,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                     },
                   ),
                   Text(
-                    post.totalLiked.toString(), // contoh jumlah like
+                    totalLiked.toString(), // contoh jumlah like
                     style: TextStyle(fontSize: 14),
                   ),
                   SizedBox(width: 16),
@@ -160,11 +186,12 @@ class _PostCardState extends ConsumerState<PostCard> {
 
                   // 📤 Share Button
                   IconButton(
-                    icon: Icon(Icons.bookmark),
+                    icon: Icon(
+                      isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    ),
                     color: Colors.grey[700],
                     onPressed: () {
-                      // TODO: Bagikan postingan
-                      print('Add to bookmark');
+                      toggleBookmark();
                     },
                   ),
                 ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobileapp/api/user_api.dart';
 import 'package:mobileapp/routing/routes.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_card.dart';
@@ -15,8 +16,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
-    final userPostsAsync = ref.watch(userPostsProvider);
     final user = ref.watch(userProvider);
+    final userPostsAsync = ref.watch(userPosttreamProvider(user!.uid));
+    final likedPostsAsync = ref.watch(likedPostsStreamProvider);
+    final savedPostsAsync = ref.watch(bookmarkPostsStreamProvider);
 
     return Scaffold(
       body: DefaultTabController(
@@ -41,8 +44,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        (user?.nickname?.isNotEmpty ?? false)
-                            ? user!.nickname!
+                        (user.nickname.isNotEmpty == false)
+                            ? user.nickname
                             : "Anonymous",
                         style: TextStyle(
                           fontSize: 18,
@@ -50,8 +53,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       Text(
-                        (user?.username?.isNotEmpty ?? false)
-                            ? "@" + user!.username!
+                        (user.username.isNotEmpty == false)
+                            ? user.username
                             : "",
                         style: TextStyle(fontSize: 12),
                       ),
@@ -78,67 +81,68 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             // 🔹 TabBarView
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  await ref.read(userPostsProvider);
-                },
-                child: TabBarView(
-                  children: [
-                    // 👉 Tab Postingan
-                    userPostsAsync.when(
-                      data: (posts) {
-                        if (posts.isEmpty) {
-                          return const Center(
-                            child: Text("Belum ada postingan"),
-                          );
-                        }
-                        return ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post = posts[index];
-                            return PostCard(post: post);
-                          },
-                        );
-                      },
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('Error: $e')),
-                    ),
+              child: TabBarView(
+                children: [
+                  // 👉 Tab Postingan
+                  userPostsAsync.when(
+                    data: (posts) {
+                      if (posts.isEmpty) {
+                        return const Center(child: Text("Belum ada postingan"));
+                      }
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return PostCard(post: post);
+                        },
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                  ),
 
-                    // 👉 Tab Likes
-                    ListView.builder(
-                      itemCount: 3,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          leading: Icon(Icons.favorite, color: Colors.red),
-                          title: Text("Anda menyukai postingan #${index + 1}"),
-                        );
-                      },
-                    ),
-                    // 👉 Tab Likes
-                   userPostsAsync.when(
-                      data: (posts) {
-                        if (posts.isEmpty) {
-                          return const Center(
-                            child: Text("Belum ada postingan"),
-                          );
-                        }
-                        return ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) {
-                            final post = posts[index];
-                            return PostCard(post: post);
-                          },
-                        );
-                      },
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('Error: $e')),
-                    ),
-                  ],
-                ),
+                  // 👉 Tab Likes
+                  likedPostsAsync.when(
+                    data: (posts) {
+                      if (posts.isEmpty) {
+                        return const Center(child: Text("Belum ada postingan"));
+                      }
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return PostCard(post: post);
+                        },
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                  ),
+
+                  // 👉 Tab Saved Post
+                  savedPostsAsync.when(
+                    data: (posts) {
+                      if (posts.isEmpty) {
+                        return const Center(child: Text("Belum ada postingan"));
+                      }
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return PostCard(post: post);
+                        },
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                  ),
+                ],
               ),
             ),
           ],
