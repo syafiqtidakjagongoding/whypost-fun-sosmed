@@ -71,16 +71,30 @@ final likedPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
       final userMap = {
         for (var doc in usersSnapshot.docs) doc['uid']: doc.data(),
       };
+      // 4️⃣ Ambil data bookmark user ini
+      final bookmarkSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('bookmarks')
+          .where('post_id', whereIn: batch)
+          .get();
+
+      final bookmarkedIds = bookmarkSnapshot.docs
+          .map((doc) => doc['post_id'] as String)
+          .toSet();
 
       final posts = postsSnapshot.docs.map((doc) {
         final data = doc.data();
         final userId = data['user_id'] as String;
         final userData = userMap[userId];
+        final isBookmarkedByMe = bookmarkedIds.contains(doc.id);
+
         return Posts.fromFirestore(
           doc.id,
           data,
           userData: userData,
           isLikedByMe: true,
+          isBookmarked: isBookmarkedByMe,
         );
       }).toList();
 
@@ -91,7 +105,6 @@ final likedPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
     yield allPosts;
   }
 });
-
 final bookmarkPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
   final user = ref.watch(userProvider);
   if (user == null) {
@@ -99,7 +112,7 @@ final bookmarkPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
     return;
   }
 
-  // 1️⃣ Ambil semua bookmark user ini secara realtime
+  // 1️⃣ Stream realtime untuk bookmarks user
   final bookmarksStream = FirebaseFirestore.instance
       .collection('users')
       .doc(user.uid)
@@ -127,20 +140,23 @@ final bookmarkPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
       );
     }
 
-    // 3️⃣ Ambil data semua post berdasarkan batch
     List<Posts> allPosts = [];
+
+    // 3️⃣ Loop tiap batch
     for (final batch in batches) {
+      // 🔸 Ambil posts yang di-bookmark
       final postsSnapshot = await FirebaseFirestore.instance
           .collection('posts')
           .where(FieldPath.documentId, whereIn: batch)
-          .get(); // ❗ pakai .get() bukan .snapshots().first
+          .get();
 
+      // 🔸 Ambil semua user_id unik
       final userIds = postsSnapshot.docs
           .map((doc) => doc['user_id'] as String)
           .toSet()
           .toList();
 
-      // 4️⃣ Ambil info user dari batch user_id
+      // 🔸 Ambil data user (creator)
       final usersSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .where('uid', whereIn: userIds)
@@ -150,16 +166,29 @@ final bookmarkPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
         for (var doc in usersSnapshot.docs) doc['uid']: doc.data(),
       };
 
-      // 5️⃣ Bentuk objek Posts lengkap
+      // 🔸 Cek mana post yang user like
+      final likeSnapshot = await FirebaseFirestore.instance
+          .collection('like_post')
+          .where('user_id', isEqualTo: user.uid)
+          .where('post_id', whereIn: batch)
+          .get();
+
+      final likedIds = likeSnapshot.docs
+          .map((doc) => doc['post_id'] as String)
+          .toSet();
+
+      // 🔸 Bangun objek post lengkap
       final posts = postsSnapshot.docs.map((doc) {
         final data = doc.data();
         final userId = data['user_id'] as String;
         final userData = userMap[userId];
+        final postId = doc.id;
 
         return Posts.fromFirestore(
-          doc.id,
+          postId,
           data,
           userData: userData,
+          isLikedByMe: likedIds.contains(postId),
           isBookmarked: true,
         );
       }).toList();
@@ -167,10 +196,10 @@ final bookmarkPostsStreamProvider = StreamProvider<List<Posts>>((ref) async* {
       allPosts.addAll(posts);
     }
 
-    // 6️⃣ Urutkan berdasarkan tanggal terbaru
+    // 4️⃣ Urutkan berdasarkan tanggal terbaru
     allPosts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    // 7️⃣ Emit hasil ke StreamProvider
+    // 5️⃣ Emit hasil setiap kali ada perubahan bookmark
     yield allPosts;
   }
 });

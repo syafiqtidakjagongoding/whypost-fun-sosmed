@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobileapp/routing/routes.dart';
 import 'package:mobileapp/state/postNotifier.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_card.dart';
@@ -46,6 +48,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         loading: () =>
             const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         error: (e, st) => Center(child: Text('Error: $e')),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.go(Routes.addPost);
+        },
+        child: Icon(Icons.add),
       ),
     );
   }

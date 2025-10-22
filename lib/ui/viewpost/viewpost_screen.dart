@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobileapp/api/user_api.dart';
 import 'package:mobileapp/state/postNotifier.dart';
 import 'package:mobileapp/state/user.dart';
 import 'package:mobileapp/ui/widgets/post_images.dart';
@@ -20,6 +21,7 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
   late bool isLiked = false;
   late int totalLiked;
   late bool isBookmarked;
+  late bool isUserPost = false;
 
   void toggleLike() {
     final user = ref.watch(userProvider);
@@ -39,6 +41,46 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
 
     // Update ke backend (Firestore/API)
     notifier.toggleLike(post.id, isLiked);
+    ref.invalidate(userPosttreamProvider);
+    ref.invalidate(bookmarkPostsStreamProvider);
+    ref.invalidate(likedPostsStreamProvider);
+    ref.invalidate(postsStreamProvider);
+  }
+
+  bool checkIsUserPost(String userId) {
+    final user = ref.read(userProvider);
+    return userId == user!.uid;
+  }
+
+  List<Widget> buildPostMenu(bool isUserPost) {
+    final menu = <Widget>[];
+
+    if (isUserPost) {
+      menu.add(
+        ListTile(
+          leading: Icon(Icons.edit, color: Colors.blue),
+          title: Text('Edit Postingan'),
+          onTap: () {},
+        ),
+      );
+      menu.add(
+        ListTile(
+          leading: Icon(Icons.delete, color: Colors.red),
+          title: Text('Hapus Postingan'),
+          onTap: () {},
+        ),
+      );
+    } else {
+      menu.add(
+        ListTile(
+          leading: Icon(Icons.flag, color: Colors.orange),
+          title: Text('Laporkan Postingan'),
+          onTap: () {},
+        ),
+      );
+    }
+
+    return menu;
   }
 
   void toggleBookmark() {
@@ -51,6 +93,10 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
     });
 
     notifier.toggleBookmark(post.id, isBookmarked);
+    ref.invalidate(userPosttreamProvider);
+    ref.invalidate(likedPostsStreamProvider);
+    ref.invalidate(bookmarkPostsStreamProvider);
+    ref.invalidate(postsStreamProvider);
   }
 
   @override
@@ -60,6 +106,7 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
     isLiked = post.isLikedByMe; // sekarang aman karena post sudah diisi
     totalLiked = post.totalLiked;
     isBookmarked = post.isBookmarked;
+    isUserPost = checkIsUserPost(post.userId);
   }
 
   @override
@@ -103,6 +150,32 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    builder: (context) {
+                                      return SafeArea(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: buildPostMenu(isUserPost),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                                child: const Padding(
+                                  padding: EdgeInsets.all(
+                                    4.0,
+                                  ), // kecilin area sentuh
+                                  child: Icon(
+                                    Icons.more_vert,
+                                    size:
+                                        18, // kecilin biar proporsional dengan teks
+                                    color: Colors.grey,
+                                  ),
                                 ),
                               ),
                             ],
@@ -169,7 +242,7 @@ class _ViewpostScreenState extends ConsumerState<ViewpostScreen> {
                       ),
                       color: Colors.grey,
                       onPressed: () {
-                       toggleBookmark();
+                        toggleBookmark();
                       },
                     ),
                   ],

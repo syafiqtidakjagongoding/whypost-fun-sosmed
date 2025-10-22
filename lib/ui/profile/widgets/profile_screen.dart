@@ -21,6 +21,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final likedPostsAsync = ref.watch(likedPostsStreamProvider);
     final savedPostsAsync = ref.watch(bookmarkPostsStreamProvider);
 
+    final totalPosts = userPostsAsync.maybeWhen(
+      data: (posts) => posts.length,
+      orElse: () => 0,
+    );
+
     return Scaffold(
       body: DefaultTabController(
         length: 3,
@@ -44,7 +49,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        (user.nickname.isNotEmpty == false)
+                        (user.nickname.isNotEmpty == true)
                             ? user.nickname
                             : "Anonymous",
                         style: TextStyle(
@@ -53,14 +58,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                       Text(
-                        (user.username.isNotEmpty == false)
-                            ? user.username
-                            : "",
+                        (user.username.isNotEmpty == true) ? user.username : "",
                         style: TextStyle(fontSize: 12),
                       ),
                       SizedBox(height: 4),
-                      Text("Total posts : 0"),
-                      Text("Likes : 10"),
+                      Text("Total posts : " + totalPosts.toString()),
                     ],
                   ),
                 ],

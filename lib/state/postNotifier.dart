@@ -103,7 +103,6 @@ final postsNotifierProvider =
         });
       });
 
-
       return notifier;
     });
 
@@ -122,11 +121,11 @@ class PostsNotifier extends StateNotifier<List<Posts>> {
       if (local == null) return post;
 
       // Kalau ada perubahan lokal (optimistik) sebelum Firestore update masuk, pakai yang paling baru
-      final hasLocalLikeChange = local.isLikedByMe != post.isLikedByMe ||
-        local.totalLiked != post.totalLiked;
+      final hasLocalLikeChange =
+          local.isLikedByMe != post.isLikedByMe ||
+          local.totalLiked != post.totalLiked;
 
-      final hasLocalBookmarkChange =
-          local.isBookmarked != post.isBookmarked;
+      final hasLocalBookmarkChange = local.isBookmarked != post.isBookmarked;
 
       if (hasLocalLikeChange || hasLocalBookmarkChange) {
         return local; // Prioritaskan data lokal yang masih lebih baru
@@ -177,8 +176,16 @@ class PostsNotifier extends StateNotifier<List<Posts>> {
     try {
       await firestore.runTransaction((tx) async {
         final postSnap = await tx.get(postRef);
-        final total = (postSnap['total_liked'] ?? 0) + (isLiked ? 1 : -1);
-        tx.update(postRef, {'total_liked': total});
+        final data = postSnap.data() ?? {};
+        final currentTotal = data['total_liked'] is int
+            ? data['total_liked'] as int
+            : 0;
+        final total = currentTotal + (isLiked ? 1 : -1);
+
+        // 🔹 Pastikan tidak bisa negatif
+        final safeTotal = total < 0 ? 0 : total;
+
+        tx.update(postRef, {'total_liked': safeTotal});
 
         if (isLiked) {
           tx.set(likeRef, {'user_id': userId, 'post_id': postId});
@@ -219,7 +226,6 @@ class PostsNotifier extends StateNotifier<List<Posts>> {
       }
     } catch (e) {
       print('❌ toggleBookmark error: $e');
-     
     }
   }
 }
