@@ -51,7 +51,7 @@ class _AddPostWidgetState extends ConsumerState<AddPostWidget> {
     final List<File> files = _images.map((x) => File(x.path)).toList();
 
     final instanceUrl = ref.read(instanceProvider)?.url;
-    final accessToken = ref.read(tokenProvider);
+    final accessToken = await ref.read(tokenProvider.future);
 
     if (instanceUrl == null || accessToken == null) {
       ScaffoldMessenger.of(

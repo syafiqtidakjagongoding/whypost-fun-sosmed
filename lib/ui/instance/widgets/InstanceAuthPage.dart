@@ -1,14 +1,55 @@
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobileapp/routing/routes.dart';
-import 'package:mobileapp/ui/auth/widgets/RulesRenderer.dart';
+import 'package:mobileapp/ui/instance/widgets/RulesRenderer.dart';
 import 'package:mobileapp/ui/utils/InstanceLink.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'TermsRenderer.dart';
 
-class InstanceAuthPage extends StatelessWidget {
+class InstanceAuthPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> instanceData;
-  const InstanceAuthPage({super.key, required this.instanceData});
+  final Map<String, dynamic> authInstanceInfo;
+
+  const InstanceAuthPage({
+    super.key,
+    required this.instanceData,
+    required this.authInstanceInfo,
+  });
+
+  @override
+  ConsumerState<InstanceAuthPage> createState() => _InstanceAuthPage();
+}
+
+class _InstanceAuthPage extends ConsumerState<InstanceAuthPage> {
+  late Map<String, dynamic> instanceData;
+  late Map<String, dynamic> authInstanceInfo;
+
+  Future<void> _handleAuthorizationToServer() async {
+    final redirectUri = dotenv.get("REDIRECT_URI");
+    final authUrl = Uri.https(instanceData['uri'], "/oauth/authorize", {
+      'response_type': 'code',
+      'client_id': authInstanceInfo['client_id'],
+      'redirect_uri': redirectUri,
+      'scope': 'read write follow push',
+    });
+
+    print("Auth URL: $authUrl");
+
+    // nanti kamu bisa buka ini memakai url_launcher:
+    await launchUrl(authUrl, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    instanceData = widget.instanceData;
+    authInstanceInfo = widget.authInstanceInfo;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +58,6 @@ class InstanceAuthPage extends StatelessWidget {
     final uri = instanceData['uri'] ?? '';
     final thumbnail = instanceData['thumbnail'];
     final registrations = instanceData['registrations'] == true;
-    final invitesEnabled = instanceData['invites_enabled'] == true;
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
@@ -53,34 +93,6 @@ class InstanceAuthPage extends StatelessWidget {
                   ),
                 if (uri.isNotEmpty) InstanceLink(uri: uri),
                 const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: registrations
-                        ? Colors.green.withOpacity(0.1)
-                        : Colors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        registrations ? Icons.lock_open : Icons.lock,
-                        color: registrations ? Colors.green : Colors.orange,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          registrations
-                              ? (invitesEnabled
-                                    ? "Registration is invite only"
-                                    : "Registration is open")
-                              : "Registration closed — only login",
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
                 RulesRenderer(rules: instanceData['rules']),
                 TermsRenderer(
@@ -92,22 +104,10 @@ class InstanceAuthPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        context.go(Routes.register);
-                      },
-                      icon: const Icon(Icons.login),
-                      label: const Text("Sign In"),
+                    OutlinedButton.icon(
+                      onPressed: _handleAuthorizationToServer,
+                      label: const Text("Next"),
                     ),
-                    const SizedBox(height: 12),
-                    if (registrations)
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          context.go(Routes.register);
-                        },
-                        icon: const Icon(Icons.person_add),
-                        label: const Text("Sign Up"),
-                      ),
                   ],
                 ),
               ],

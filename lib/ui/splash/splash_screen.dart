@@ -19,13 +19,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   void _initGuest() async {
-    final token = ref.read(tokenProvider);
-    if (token != null && token.isNotEmpty) {
+    final token = await ref.read(tokenProvider.future);
+    final instance = await ref.read(instanceUrlProvider.future);
+
+    if (token != null && token.isNotEmpty && instance != null) {
+      // ignore: use_build_context_synchronously
       context.go(Routes.home);
-      return;
+    } else {
+      // ignore: use_build_context_synchronously
+      context.go(Routes.instance); // navigasi ke HomeScreen
     }
-    if (!mounted) return;
-    context.go(Routes.instance); // navigasi ke HomeScreen
   }
 
   @override
@@ -42,7 +45,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
             // 🔄 Loading indicator
             const CircularProgressIndicator(color: Colors.white),
-            
           ],
         ),
       ),

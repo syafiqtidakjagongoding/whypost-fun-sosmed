@@ -1,56 +1,61 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 class TokenRepository {
-  static const _key = "access_token";
+  static const _keyToken = "access_token";
+  static const _keyInstance = "instance_url";
 
-  // simpan token
+  /// simpan access token
   Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, token);
+    await prefs.setString(_keyToken, token);
   }
 
-  // ambil token
+  /// ambil access token
   Future<String?> loadToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_key);
+    return prefs.getString(_keyToken);
   }
 
-  // hapus token
+  /// hapus access token
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+    await prefs.remove(_keyToken);
+  }
+
+  /// simpan instance/server URL
+  Future<void> saveInstanceUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyInstance, url);
+  }
+
+  /// ambil instance/server URL
+  Future<String?> loadInstanceUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyInstance);
+  }
+
+  /// hapus instance URL
+  Future<void> clearInstanceUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyInstance);
+  }
+
+  /// clear semua auth
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_keyToken);
+    await prefs.remove(_keyInstance);
   }
 }
-final tokenRepoProvider = Provider<TokenRepository>((ref) {
-  return TokenRepository();
+
+final tokenRepoProvider = Provider((ref) => TokenRepository());
+
+/// provider hanya untuk token
+final tokenProvider = FutureProvider<String?>((ref) async {
+  return ref.read(tokenRepoProvider).loadToken();
 });
 
-
-class TokenState extends StateNotifier<String?> {
-  final TokenRepository repo;
-
-  TokenState(this.repo) : super(null) {
-    _load();
-  }
-
-  Future<void> _load() async {
-    state = await repo.loadToken();
-  }
-
-  Future<void> setToken(String token) async {
-    state = token;
-    await repo.saveToken(token);
-  }
-
-  Future<void> clear() async {
-    state = null;
-    await repo.clearToken();
-  }
-}
-
-final tokenProvider = StateNotifierProvider<TokenState, String?>((ref) {
-  final repo = ref.read(tokenRepoProvider);
-  return TokenState(repo);
+/// provider hanya untuk instance_url
+final instanceUrlProvider = FutureProvider<String?>((ref) async {
+  return ref.read(tokenRepoProvider).loadInstanceUrl();
 });

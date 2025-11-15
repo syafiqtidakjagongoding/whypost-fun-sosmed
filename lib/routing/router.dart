@@ -5,8 +5,8 @@ import 'package:mobileapp/ui/addpost/widgets/addpost_screen.dart';
 import 'package:mobileapp/ui/home/widgets/home_screen.dart';
 import 'package:mobileapp/ui/notifications/widgets/notifications_screen.dart';
 import 'package:mobileapp/ui/profile/widgets/profile_screen.dart';
-import 'package:mobileapp/ui/auth/widgets/ChoosingInstance.dart';
-import 'package:mobileapp/ui/auth/widgets/InstanceAuthPage.dart';
+import 'package:mobileapp/ui/instance/widgets/ChoosingInstance.dart';
+import 'package:mobileapp/ui/instance/widgets/InstanceAuthPage.dart';
 import 'package:mobileapp/ui/auth/widgets/RegisterScreen.dart';
 import 'package:mobileapp/ui/search/widgets/search_screen.dart';
 import 'package:mobileapp/ui/splash/splash_screen.dart';
@@ -26,8 +26,14 @@ final router = GoRouter(
     GoRoute(
       path: Routes.instanceAuthPage,
       builder: (context, state) {
-        final instanceData = state.extra as Map<String, dynamic>;
-        return InstanceAuthPage(instanceData: instanceData);
+        final extra = state.extra as Map<String, dynamic>;
+
+        final instanceData = extra["instanceData"] as Map<String, dynamic>;
+        final authInstanceInfo = extra["authInstance"] as Map<String, dynamic>;
+        return InstanceAuthPage(
+          instanceData: instanceData,
+          authInstanceInfo: authInstanceInfo,
+        );
       },
     ),
 

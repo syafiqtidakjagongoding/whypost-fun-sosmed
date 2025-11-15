@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobileapp/routing/routes.dart';
+import 'package:mobileapp/state/token.dart';
 
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -14,7 +15,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    // final postsAsync = ref.watch(postsStreamProvider(user!.uid));
 
     return Scaffold(
       appBar: AppBar(

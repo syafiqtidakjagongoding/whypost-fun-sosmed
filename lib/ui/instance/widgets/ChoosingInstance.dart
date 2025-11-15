@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
@@ -16,17 +17,16 @@ class ChooseInstancePage extends ConsumerStatefulWidget {
 
 class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
   final _formKey = GlobalKey<FormState>();
-  final _controller = TextEditingController(
-    text: 'https://fedi.syafiq-paradisam.my.id',
-  );
+  final _controller = TextEditingController(text: 'https://mastodon.social');
   bool _loading = false;
   String? _message;
 
   String? _validateInstance(String? v) {
-    if (v == null || v.trim().isEmpty) return 'Masukkan URL instance';
+    if (v == null || v.trim().isEmpty) return 'Please enter the instance URL.';
     final text = v.trim();
-    if (!text.startsWith('http')) return 'Gunakan format lengkap (https://...)';
-    if (!text.contains('.')) return 'URL instance tampak tidak valid';
+    if (!text.startsWith('http'))
+      return 'Use the full URL format (https://...).';
+    if (!text.contains('.')) return 'The instance URL looks invalid.';
     return null;
   }
 
@@ -41,6 +41,7 @@ class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
     final instance = _controller.text.trim();
 
     try {
+      final redirectUri = dotenv.env['REDIRECT_URI']!;
       // Coba ambil info instance dari /api/v1/instance (Mastodon-compatible)
       final uri = Uri.parse('$instance/api/v1/instance');
       final response = await http.get(uri);
@@ -60,28 +61,27 @@ class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
           throw Exception("Instance isn't fediverse");
         }
       } else {
-        print('Gagal: ${response.statusCode}');
+        throw Exception("Failed to checking instance");
       }
       // (Kamu bisa ganti dengan http.get(uri) jika ingin benar-benar fetch)
       // contoh dummy di sini, karena kita tidak konek ke server langsung
 
       // Jika sukses:
       setState(() {
-        _message = 'Instance terdeteksi: $instance';
+        _message = 'Instance detected: $instance';
       });
       final appReg = await http.post(
         Uri.parse('$instance/api/v1/apps'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'client_name': 'WhyPost',
-          'redirect_uris': 'myapp://callback',
+          'redirect_uris': redirectUri,
           'scopes': 'read write follow push',
-          'website': 'https://app.syafiq-paradisam.my.id',
         }),
       );
 
       if (appReg.statusCode != 200) {
-        throw Exception("Gagal register app: ${appReg.body}");
+        throw Exception("Failed to register app: ${appReg.body}");
       }
 
       final regJson = jsonDecode(appReg.body);
@@ -101,11 +101,11 @@ class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
       // Setelah sukses, bisa pop ke halaman sebelumnya dengan membawa nilai
       context.push(
         Routes.instanceAuthPage,
-        extra: jsonData, // kirim JSON hasil fetch
+        extra: {"instanceData": jsonData, "authInstance": regJson},
       );
     } catch (e) {
       setState(() {
-        _message = '$e';
+        _message = "Failed to checking instance $e";
       });
     } finally {
       setState(() {
@@ -149,7 +149,7 @@ class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.cloud_done),
-                label: Text(_loading ? 'Memeriksa...' : 'Gunakan Instance'),
+                label: Text(_loading ? 'Checking...' : 'Use Instance'),
                 onPressed: _loading ? null : _checkInstance,
               ),
               const SizedBox(height: 20),
@@ -158,7 +158,7 @@ class _ChooseInstancePageState extends ConsumerState<ChooseInstancePage> {
                   _message!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _message!.contains('Gagal')
+                    color: _message!.contains('Fail')
                         ? Colors.red
                         : Colors.green,
                   ),
